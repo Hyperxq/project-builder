@@ -1,0 +1,25 @@
+{
+  "name": "@danils/project-builder",
+  "version": "1.0.0",
+  "description": "Project Builder allows to execute many schematics in an only execution with different levels of dependencies",
+  "main": "index.js",
+  "author": "Hyperxq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hyperxq/project-builder"
+  },
+  "license": "GNU GENERAL PUBLIC LICENSE",
+  "schematics": "./lib/schematics/collection.json",
+  "dependencies": {
+    "@angular-devkit/core": "^17.1.3",
+    "@angular-devkit/schematics": "^17.1.3",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "@schematics/angular": "^17.1.3",
+    "ajv": "8.6.2",
+    "ansi-colors": "4.1.3",
+    "inquirer": "8.2.6",
+    "node-emoji": "^2.1.0",
+    "ora": "5.4.1",
+    "typescript": "^5.3.3"
+  }
+}

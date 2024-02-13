@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.pbuilder.dev/",
+  "definitions": {
+    "Dictionary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "SchematicSettings": {
+      "type": "object",
+      "properties": {
+        "collection": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "ISchematic": {
+      "type": "object",
+      "properties": {
+        "collection": {
+          "type": "string"
+        },
+        "ID": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "settings": {
+          "$ref": "#/definitions/SchematicSettings"
+        },
+        "instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ISchematic"
+          }
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "children": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ISchematic"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ICollections": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "keepInstalled": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/definitions/SchematicSettings"
+        }
+      }
+    },
+    "ProjectSettings": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "type": "object",
+  "properties": {
+    "collections": {
+      "$ref": "#/definitions/ICollections"
+    },
+    "projects": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/ProjectSettings"
+      }
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/definitions/ISchematic"
+  }
+}

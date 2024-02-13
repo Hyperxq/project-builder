@@ -1,0 +1,37 @@
+{
+  "collections": {
+    "@danils/schematicskit": {
+      "prettier": {
+        "alias": "prettier"
+      }
+    },
+    "@angular/material": {
+      "address-form": {
+        "alias": "address-form"
+      }
+    },
+    "@schematics/angular": {
+      "keepInstalled": true,
+      "component": {
+        "alias": "components"
+      },
+      "service": {
+        "alias": "services"
+      },
+      "module": {
+        "alias": "modules"
+      },
+      "directive": {
+        "alias": "directives"
+      },
+      "pipe": {
+        "alias": "pipes"
+      },
+      "class": {
+        "alias": "classes"
+      }
+    }
+  },
+  "src/assets/cleanCss": {},
+  "src/assets/applyBEM": {}
+}
