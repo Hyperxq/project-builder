@@ -5,6 +5,10 @@ const utils_1 = require("../../utils");
 const dependencies_1 = require("@schematics/angular/utility/dependencies");
 const node_child_process_1 = require("node:child_process");
 function installPackages(options) {
+    utils_1.logger.log({
+        level: 'info',
+        message: utils_1.colors.bold('The installation of collections began')
+    });
     const ignores = [];
     const { packages, dryRun, packageManager } = options;
     return (tree) => {
@@ -30,9 +34,9 @@ function installPackages(options) {
             }
             spinner.succeed('All the  packages have been installed');
         }
-        catch (err) {
+        catch (error) {
             spinner?.stop();
-            throw err;
+            utils_1.logger.error('Collection installation error:', error.message);
         }
     };
 }

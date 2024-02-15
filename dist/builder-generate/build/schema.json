@@ -5,7 +5,7 @@
   "title": "Build Options Schema",
   "description": "Defines the options for the build schematic.",
   "properties": {
-    "dryRun": {
+    "saveMode": {
       "type": "boolean",
       "description": "Run in dry-run mode.",
       "default": false
@@ -21,6 +21,10 @@
     "installCollections": {
       "type": "boolean",
       "default": true
+    },
+    "silentMode": {
+      "type": "boolean",
+      "default": false
     },
     "packageManager": {
       "description": "The package manager used to install dependencies.",

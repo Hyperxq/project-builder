@@ -4,6 +4,7 @@ export interface BuildOptions {
 
     installCollections?: boolean;
     saveMode: boolean;
+    silentMode: boolean;
     packageManager: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun'
     // workspaceStructure: WorkspaceStructure;
     // unInstallCollection?: boolean;
@@ -16,6 +17,8 @@ export type SchematicSettings = Dictionary & { collection: string };
 export type ProjectSettings = Dictionary;
 
 export interface ISchematic {
+    sendPath?: boolean;
+    alias?: string;
     collection?: string;
     ID?: string; // Test if I can generate my own ID
     path?: string;
@@ -33,6 +36,7 @@ export type ICollections = {
 }
 
 interface IWorkspace {
+    $schema: string;
     collections?: ICollections;
     projects?: { [projectName: string]: ProjectSettings };
 }
@@ -40,11 +44,7 @@ interface IWorkspace {
 export type IWorkspaceStructure = IWorkspace & { [schematicName: string]: ISchematic };
 
 export type SettingsCached = {
-    [projectName: string]: { [schematicName: string]: SchematicSettings };
-} & {
-    global?: {
-        [schematicName: string]: SchematicSettings;
-    };
+    [schematicName: string]: [string, SchematicSettings];
 };
 
 // interface IWorkspaceStructure {

@@ -56,7 +56,9 @@ const baseExternal = [
     'node-emoji',
     '@angular-devkit/schematics-cli',
     '@angular-devkit/schematics',
-    'ajv'
+    'ajv',
+    'winston-console-format',
+    'winston'
 ];
 
 var rollup_config = [

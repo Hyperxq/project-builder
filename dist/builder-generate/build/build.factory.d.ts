@@ -5,7 +5,8 @@ interface BuildOptions {
     filePath: string;
     remoteFile?: boolean;
     installCollections?: boolean;
-    dryRun: boolean;
+    saveMode: boolean;
+    silentMode: boolean;
     packageManager: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun';
 }
 

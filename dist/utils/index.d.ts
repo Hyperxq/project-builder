@@ -1,4 +1,5 @@
 import ansiColors from 'ansi-colors';
+import * as winston from 'winston';
 
 declare function removeColor(text: string): string;
 declare const colors: typeof ansiColors;
@@ -16,4 +17,6 @@ declare class Spinner {
     start(text?: string): void;
 }
 
-export { Spinner, colors, removeColor };
+declare const logger: winston.Logger;
+
+export { Spinner, colors, logger, removeColor };

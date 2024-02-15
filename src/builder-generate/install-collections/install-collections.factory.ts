@@ -1,5 +1,5 @@
 import {Rule, Tree} from '@angular-devkit/schematics';
-import {colors, Spinner} from "../../utils";
+import {colors, logger, Spinner} from "../../utils";
 import {getPackageJsonDependency} from "@schematics/angular/utility/dependencies";
 import {execSync} from "node:child_process";
 // import {execSync} from 'child_process';
@@ -10,7 +10,10 @@ export function installPackages(options: {
     packageManager?: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun'
     dryRun: boolean;
 }): Rule {
-    //TODO 1: implement winston.
+    logger.log({
+        level: 'info',
+        message: colors.bold('The installation of collections began')
+    });
     const ignores: string[] = [];
     const {packages, dryRun, packageManager} = options;
     return (tree: Tree) => {
@@ -33,9 +36,9 @@ export function installPackages(options: {
                 }
             }
             spinner.succeed('All the  packages have been installed');
-        } catch (err) {
+        } catch (error) {
             spinner?.stop();
-            throw err;
+            logger.error('Collection installation error:', error.message);
         }
     };
 }

@@ -18,6 +18,9 @@
     "ISchematic": {
       "type": "object",
       "properties": {
+        "alias": {
+          "type": "string"
+        },
         "collection": {
           "type": "string"
         },
@@ -75,6 +78,9 @@
   },
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "collections": {
       "$ref": "#/definitions/ICollections"
     },

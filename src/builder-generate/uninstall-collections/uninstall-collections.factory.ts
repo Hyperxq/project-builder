@@ -1,5 +1,5 @@
 import {Rule, Tree} from '@angular-devkit/schematics';
-import {colors, Spinner} from "../../utils";
+import {colors, logger, Spinner} from "../../utils";
 import {execSync} from "node:child_process";
 // import {execSync} from 'child_process';
 // import {colors, getPackageJsonDependency, Spinner} from '../../utils';
@@ -9,7 +9,10 @@ export function uninstallPackages(options: {
     packageManager?: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun'
     dryRun: boolean;
 }): Rule {
-    //TODO 1: implement winston.
+    logger.log({
+        level: 'info',
+        message: colors.bold('The uninstallation of collections began')
+    });
     const ignores: string[] = [];
     const {packageNames, dryRun, packageManager} = options;
     return (tree: Tree) => {

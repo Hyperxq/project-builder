@@ -4,6 +4,10 @@ exports.uninstallPackages = void 0;
 const utils_1 = require("../../utils");
 const node_child_process_1 = require("node:child_process");
 function uninstallPackages(options) {
+    utils_1.logger.log({
+        level: 'info',
+        message: utils_1.colors.bold('The uninstallation of collections began')
+    });
     const ignores = [];
     const { packageNames, dryRun, packageManager } = options;
     return (tree) => {

@@ -2,7 +2,8 @@ interface BuildOptions {
     filePath: string;
     remoteFile?: boolean;
     installCollections?: boolean;
-    dryRun: boolean;
+    saveMode: boolean;
+    silentMode: boolean;
     packageManager: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun';
 }
 type Dictionary = {
@@ -14,6 +15,8 @@ type SchematicSettings = Dictionary & {
 };
 type ProjectSettings = Dictionary;
 interface ISchematic {
+    sendPath?: boolean;
+    alias?: string;
     collection?: string;
     ID?: string;
     path?: string;
@@ -33,6 +36,7 @@ type ICollections = {
     };
 };
 interface IWorkspace {
+    $schema: string;
     collections?: ICollections;
     projects?: {
         [projectName: string]: ProjectSettings;
@@ -42,13 +46,7 @@ type IWorkspaceStructure = IWorkspace & {
     [schematicName: string]: ISchematic;
 };
 type SettingsCached = {
-    [projectName: string]: {
-        [schematicName: string]: SchematicSettings;
-    };
-} & {
-    global?: {
-        [schematicName: string]: SchematicSettings;
-    };
+    [schematicName: string]: [string, SchematicSettings];
 };
 
 export type { BuildOptions, Dictionary, ICollections, ISchematic, IWorkspaceStructure, Instance, ProjectSettings, SchematicSettings, SettingsCached };
