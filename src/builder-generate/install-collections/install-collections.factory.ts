@@ -17,8 +17,6 @@ export function installPackages(options: {
     const ignores: string[] = [];
     const {packages, dryRun, packageManager} = options;
     return (tree: Tree) => {
-        let spinner = new Spinner('installPackages');
-        spinner.start('Checking collections');
         try {
             for (const {packageName, version} of packages) {
                 if (ignores.some((ignore) => ignore === packageName)) continue;
@@ -35,10 +33,9 @@ export function installPackages(options: {
                     packageSpinner.stop();
                 }
             }
-            spinner.succeed('All the  packages have been installed');
         } catch (error) {
-            spinner?.stop();
             logger.error('Collection installation error:', error.message);
+            process.exit(1);
         }
     };
 }

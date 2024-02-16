@@ -30,16 +30,16 @@ export const logger = createLogger(
                     })
                 ),
             }),
-            new transports.File({filename: 'logs/exceptions.log', level: 'error'}),
-            new transports.File({filename: 'logs/info.log', level: 'info'}),
+            // new transports.File({filename: 'logs/exceptions.log', level: 'error'}),
+            // new transports.File({filename: 'logs/info.log', level: 'info'}),
         ]
     }
 );
 
 
-logger.exceptions.handle(
-    new transports.File({filename: 'logs/exceptions.log', level: 'error'}),
-);
-logger.rejections.handle(
-    new transports.File({filename: 'logs/rejections.log'})
-);
+// logger.exceptions.handle(
+//     new transports.File({filename: 'logs/exceptions.log', level: 'error'}),
+// );
+// logger.rejections.handle(
+//     new transports.File({filename: 'logs/rejections.log'})
+// );

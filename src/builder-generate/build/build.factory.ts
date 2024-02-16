@@ -66,7 +66,6 @@ export function main(options: BuildOptions) {
         }
 
         // 8. * Uninstall all the collection that doesn't have the attribute "keepInstalled"
-        logger.debug(dependencies);
         if (installCollections) uninstallCollections(context, deepCopy(collections), packageManager, dependencies, dryRun);
 
 
@@ -183,7 +182,6 @@ function checkCollections(context: SchematicContext, collections: ICollections, 
 function uninstallCollections(context: SchematicContext, collections: ICollections, packageManager: string, dependencies: TaskId[], dryRun: boolean): TaskId {
 
     const entries = Object.entries(collections);
-    logger.debug('packageNames to uninstall', collections);
     const packageNames = entries
         .filter(([packageName, settings]) => {
             const {keepInstalled} = settings;
@@ -193,7 +191,6 @@ function uninstallCollections(context: SchematicContext, collections: ICollectio
             return packageName
         });
 
-    logger.debug('packageNames to uninstall', packageNames);
     return context.addTask(
         new RunSchematicTask('uninstallCollections', {
             packageNames,
@@ -236,62 +233,66 @@ function executeSchematics(context: SchematicContext, schematics: {
 
 
 function processSchematic(context: SchematicContext, path: string, schematicName: string, schematic: ISchematic, dependencies: TaskId[], dryRun: boolean) {
+    try {
+        // get settings
+        const {
+            collection,
+            alias,
+            ID,
+            path: schematicPath,
+            settings,
+            instances,
+            dependsOn,
+            children,
+            sendPath
+        } = schematic;
 
-    // get settings
-    const {
-        collection,
-        alias,
-        ID,
-        path: schematicPath,
-        settings,
-        instances,
-        dependsOn,
-        children,
-        sendPath
-    } = schematic;
+        const [globalCollection, globalSettings] = getGlobalSettings(schematicName, alias);
+        if (!globalCollection && !collection) {
+            logger.error(`Error executing ${schematicName} schematic`, [`${schematicName} doesn't have a collection specified`])
+            process.exit(1);
+        }
 
-    const [globalCollection, globalSettings] = getGlobalSettings(schematicName, alias);
-    if (!globalCollection && !collection) {
-        logger.error(`Error executing ${schematicName} schematic`, [`${schematicName} doesn't have a collection specified`])
+        if (!!schematicPath) path = `${path}/${schematicPath}`;
+
+        dependencies.push(context.addTask(
+            new RunSchematicTask('showSchematicInfo', {
+                schematicName,
+                collection: collection ?? globalCollection
+            }),
+            dependencies
+        ));
+
+
+        const taskIdList = executeSchematic(
+            context,
+            path,
+            globalCollection ?? collection,
+            schematicName,
+            {
+                ...globalSettings,
+                ...settings
+            },
+            dependencies,
+            instances,
+            dryRun,
+            sendPath
+        );
+
+        dependencies.push(...taskIdList);
+
+        // loop children
+        if (!children) return dependencies;
+
+        const childrenList = Object.entries(children);
+        childrenList.forEach(([schematicChildName, childSettings]) => {
+            dependencies.push(...processSchematic(context, path, schematicChildName, childSettings, dependencies, dryRun));
+        });
+        return dependencies;
+    } catch (error) {
+        logger.error(`Error processing: ${schematicName} schematic`, [error.message]);
         process.exit(1);
     }
-
-    if (!!schematicPath) path = `${path}/${schematicPath}`;
-
-    dependencies.push(context.addTask(
-        new RunSchematicTask('showSchematicInfo', {
-            schematicName,
-            collection: collection ?? globalCollection
-        }),
-        dependencies
-    ));
-
-
-    const taskIdList = executeSchematic(
-        context,
-        path,
-        globalCollection ?? collection,
-        schematicName,
-        {
-            ...globalSettings,
-            ...settings
-        },
-        dependencies,
-        instances,
-        dryRun,
-        sendPath
-    );
-
-    dependencies.push(...taskIdList);
-
-    // loop children
-    if (!children) return dependencies;
-
-    const childrenList = Object.entries(children);
-    childrenList.forEach(([schematicChildName, childSettings]) => {
-        dependencies.push(...processSchematic(context, path, schematicChildName, childSettings, dependencies, dryRun));
-    });
-    return dependencies;
 }
 
 //
@@ -308,15 +309,9 @@ function executeSchematic(
 ): TaskId[] {
     const taskIdList = [];
     const {path: schematicPath, name} = parseName(path, schematicName);
-    logger.debug('executeSchematic' + schematicName, {schematicPath, name})
     if (!!schematicPath) path = schematicPath;
 
     if (instances.length === 0) {
-        logger.debug('executeSchematic 0 instances' + schematicName, {
-            dryRun,
-            path,
-            ...settings
-        });
 
         let options: {} = settings;
         if (sendPath) {

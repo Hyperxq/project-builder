@@ -8,6 +8,4 @@ node_modules/
 *.map
 
 # configuration
-renovate.json
-gulpfile.js
 /.vscode

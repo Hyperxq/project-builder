@@ -16,8 +16,6 @@ export function uninstallPackages(options: {
     const ignores: string[] = [];
     const {packageNames, dryRun, packageManager} = options;
     return (tree: Tree) => {
-        let spinner = new Spinner('uninstallPackages');
-        spinner.start('Uninstalling collections');
         try {
             for (const packageName of packageNames) {
                 if (ignores.some((ignore) => ignore === packageName)) continue;
@@ -26,10 +24,9 @@ export function uninstallPackages(options: {
                 if (!dryRun) execSync(`${packageManager ?? 'npm'} uninstall ${packageName}`, {stdio: 'inherit'});
                 packageSpinner.succeed(`${colors.green(packageName)} was uninstalled successfully`);
             }
-            spinner.succeed('All the packages have been uninstalled');
-        } catch (err) {
-            spinner?.stop();
-            throw err;
+        } catch (error) {
+            logger.error('Collection uninstallation error:', error.message);
+            process.exit(1);
         }
     };
 }
