@@ -339,12 +339,14 @@ function executeSchematic(
     for (const instance of instances) {
       const { path: instancePath, ...instanceSettings } = instance;
       if (instancePath) path = `${path}/${instancePath}`;
-      let options = settings;
+      let options: object = {
+        ...settings,
+        ...instanceSettings
+      };
       if (sendPath) {
         options = {
           path,
-          ...settings,
-          ...instanceSettings
+          ...options
         };
       }
       const taskId = context.addTask(
