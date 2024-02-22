@@ -1,12 +1,12 @@
 {
   "$schema": "../node_modules/@angular-devkit/schematics/collection-schema.json",
   "schematics": {
-    "build": {
+    "init": {
       "description": "Execute all the schematics with the json file",
       "factory": "./builder-generate/build/build.factory#main",
       "schema": "./builder-generate/build/schema.json",
       "aliases": [
-        "b"
+        "i"
       ]
     },
     "showSchematicInfo": {

@@ -1,14 +1,15 @@
 export interface BuildOptions {
-    filePath: string;
-    remoteFile?: boolean;
+  filePath: string;
+  remoteFile?: boolean;
+  base64String?: string;
 
-    installCollections?: boolean;
-    saveMode: boolean;
-    silentMode: boolean;
-    packageManager: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun'
-    // workspaceStructure: WorkspaceStructure;
-    // unInstallCollection?: boolean;
-    // name?: string;
+  installCollections?: boolean;
+  saveMode: boolean;
+  silentMode: boolean;
+  packageManager: 'npm' | 'pnpm' | 'yarn' | 'cnpm' | 'bun';
+  // workspaceStructure: WorkspaceStructure;
+  // unInstallCollection?: boolean;
+  // name?: string;
 }
 
 export type Dictionary = { [key: string]: any };
@@ -17,34 +18,34 @@ export type SchematicSettings = Dictionary & { collection: string };
 export type ProjectSettings = Dictionary;
 
 export interface ISchematic {
-    sendPath?: boolean;
-    alias?: string;
-    collection?: string;
-    ID?: string; // Test if I can generate my own ID
-    path?: string;
-    settings?: SchematicSettings;
-    instances?: Instance[];
-    dependsOn?: string[];
-    children?: { [schematicName: string]: ISchematic };
+  sendPath?: boolean;
+  alias?: string;
+  collection?: string;
+  ID?: string; // Test if I can generate my own ID
+  path?: string;
+  settings?: SchematicSettings;
+  instances?: Instance[];
+  dependsOn?: string[];
+  children?: { [schematicName: string]: ISchematic };
 }
 
 export type ICollections = {
-    [collectionName: string]: { [schematicName: string]: SchematicSettings } & {
-        keepInstalled?: boolean;
-        version?: string
-    }
+  [collectionName: string]: { [schematicName: string]: SchematicSettings } & {
+    keepInstalled?: boolean;
+    version?: string
+  }
 }
 
 interface IWorkspace {
-    $schema: string;
-    collections?: ICollections;
-    projects?: { [projectName: string]: ProjectSettings };
+  $schema: string;
+  collections?: ICollections;
+  projects?: { [projectName: string]: ProjectSettings };
 }
 
 export type IWorkspaceStructure = IWorkspace & { [schematicName: string]: ISchematic };
 
 export type SettingsCached = {
-    [schematicName: string]: [string, SchematicSettings];
+  [schematicName: string]: [string, SchematicSettings];
 };
 
 // interface IWorkspaceStructure {

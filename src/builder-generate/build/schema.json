@@ -18,6 +18,10 @@
       "type": "boolean",
       "default": false
     },
+    "base64String": {
+      "type": "string",
+      "description": "The workspace structure."
+    },
     "installCollections": {
       "type": "boolean",
       "default": true
