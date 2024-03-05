@@ -228,16 +228,17 @@ function getGlobalSettings(schematic: string, alias?: string) {
 function executeSchematics(context: SchematicContext, schematics: {
   [schematicName: string]: ISchematic
 }, dependencies: TaskId[], dryRun: boolean) {
+  const newDependencies: TaskId[] = [];
   // - validate if the schematic exists.
   // - check if collections are installed.
 
   const schematicList = Object.entries(schematics);
   schematicList.forEach(([schematicName, schematic]) => {
     // - get global settings.
-    dependencies.push(...processSchematic(context, '/', schematicName, schematic ?? {}, [], dryRun));
+    newDependencies.push(...processSchematic(context, '/', schematicName, schematic ?? {}, dependencies, dryRun));
   });
 
-  return dependencies;
+  return [...newDependencies, ...dependencies];
 }
 
 
@@ -288,6 +289,7 @@ function processSchematic(context: SchematicContext, path: string, schematicName
       sendPath
     );
 
+
     dependencies.push(...taskIdList);
 
     // loop children
@@ -337,7 +339,7 @@ function executeSchematic(
     taskIdList.push(taskId);
   } else {
     for (const instance of instances) {
-      const { path: instancePath, ...instanceSettings } = instance;
+      const { path: instancePath, settings: instanceSettings } = instance;
       if (instancePath) path = `${path}/${instancePath}`;
       let options: object = {
         ...settings,
@@ -350,7 +352,8 @@ function executeSchematic(
         };
       }
       const taskId = context.addTask(
-        new RunSchematicTask(collection, schematicName, options)
+        new RunSchematicTask(collection, schematicName, options),
+        dependencies
       );
 
       taskIdList.push(taskId);
