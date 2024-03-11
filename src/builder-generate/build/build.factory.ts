@@ -6,32 +6,46 @@ import {
   ISchematic,
   IWorkspaceStructure,
   SchematicSettings,
-  SettingsCached
+  SettingsCached,
 } from './build.interfaces';
 // import { createId } from '@paralleldrive/cuid2';
 import Ajv from 'ajv';
 import schema from '../../config/config-schema.json';
 import { RunSchematicTask } from '@angular-devkit/schematics/tasks';
-import { colors, logger, Spinner } from '../../utils';
+import { colors, logger, spawnAsync, Spinner } from '../../utils';
 import { parseName } from '@schematics/angular/utility/parse-name';
 import { deepCopy } from '@angular-devkit/core';
 
 const settingsCached: SettingsCached = {};
+const collectionsInstalled: string[] = [];
+let globalPackageManager = 'npm';
 
 export function main(options: BuildOptions) {
   return async (tree: Tree, context: SchematicContext) => {
     logger.log({
       level: 'info',
 
-      message: colors.bold('✨ Project Builder orchestrator started ✨')
+      message: colors.bold('✨ Project Builder orchestrator started ✨'),
     });
 
-    logger.warn('🚸 Warning: if any schematic fails, none of the previously executed ones will take effect');
+    logger.warn(
+      '🚸 Warning: if any schematic fails, none of the previously executed ones will take effect'
+    );
     // 1. * Read JSON or get JSON
-    const { saveMode: dryRun, packageManager, filePath, base64String, remoteFile, installCollections } = options;
+    const {
+      saveMode: dryRun,
+      packageManager,
+      filePath,
+      base64String,
+      remoteFile,
+      installCollections,
+    } = options;
 
-    const json: IWorkspaceStructure = base64String ? convertJsonFromBase64(base64String) : await getFile(filePath, remoteFile, tree);
+    globalPackageManager = packageManager;
 
+    const json: IWorkspaceStructure = base64String
+      ? convertJsonFromBase64(base64String)
+      : await getFile(filePath, remoteFile, tree);
 
     if (json === undefined) return tree;
     // 2. * Validate JSON, needs to be a valid schema: https://medium.com/@AlexanderObregon/json-schema-a-guide-to-validating-your-json-data-9f225b2a17ef
@@ -40,13 +54,22 @@ export function main(options: BuildOptions) {
     if (!isValid) return tree;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { $schema, projects, collections, ...schematics }: IWorkspaceStructure = json;
+    // const {...schematics }: IWorkspaceStructure = json;
+
+    const collections = json.collections ?? {};
+    // const $schema = json.$schema;
+    // const projects = json.projects ?? {};
+    delete json.$schema;
+    delete json.collections;
+    delete json.projects;
+
+    const schematics = deepCopy(json);
 
     let dependencies: TaskId[] = [];
 
     // 3. * Validate is collections are installed.
-    if (installCollections) dependencies.push(checkCollections(context, deepCopy(collections), packageManager, dryRun));
-
+    if (installCollections)
+      dependencies.push(checkCollections(context, deepCopy(collections), packageManager, dryRun));
 
     // 4. (for angular) Add Collections to angular.json
     // 5. (for angular) Check if projects are created and if not, install them.
@@ -62,19 +85,21 @@ export function main(options: BuildOptions) {
       //TODO: run schematic in dry-run first to check if everything is okay
       dependencies = executeSchematics(context, schematics, dependencies, dryRun);
     } catch (err) {
-      logger.error('Something happened when Project Builder tried to execute schematics', [err.message]);
+      logger.error('Something happened when Project Builder tried to execute schematics', [
+        err.message,
+      ]);
       process.exit(1);
     }
 
     // 8. * Uninstall all the collection that doesn't have the attribute "keepInstalled"
-    if (installCollections) uninstallCollections(context, deepCopy(collections), packageManager, dependencies, dryRun);
-
+    if (installCollections)
+      uninstallCollections(context, deepCopy(collections), packageManager, dependencies, dryRun);
 
     /*
-    * 1. Generate unique ID for each schematic.
-    * 2. Topological Sorting.
-    * 3. Cycle Detections.
-    * */
+     * 1. Generate unique ID for each schematic.
+     * 2. Topological Sorting.
+     * 3. Cycle Detections.
+     * */
   };
 }
 
@@ -109,7 +134,6 @@ function convertJsonFromBase64(base64String: string): IWorkspaceStructure {
   return JSON.parse(jsonString);
 }
 
-
 async function validateJson(json: unknown) {
   try {
     const ajv = new Ajv();
@@ -134,13 +158,13 @@ function processCollections(collections: ICollections) {
     const { keepInstalled, version, ...schematics } = collectionContent;
     for (const [schematicName, settings] of Object.entries(schematics)) {
       /*
-      * Note: We have 2 scenarios here:
-      * 1. If the user has 2 or more schematics with the same name but different collection
-      * When that happens, the user needs to add an alias.
-      * 2. When the user has 2 or more with the same alias.
-      *
-      * The question here is: Do we need to store all the schematics with the same in alias in a hash table?
-      * */
+       * Note: We have 2 scenarios here:
+       * 1. If the user has 2 or more schematics with the same name but different collection
+       * When that happens, the user needs to add an alias.
+       * 2. When the user has 2 or more with the same alias.
+       *
+       * The question here is: Do we need to store all the schematics with the same in alias in a hash table?
+       * */
       const { alias } = settings;
       if (settingsCached[alias] || settingsCached[schematicName]) {
         logger.error('Two or more schematics has the same schematic name or alias');
@@ -162,33 +186,45 @@ function processCollections(collections: ICollections) {
 //     keepInstalled: boolean;
 // }} = {};
 
-
-function checkCollections(context: SchematicContext, collections: ICollections, packageManager: string, dryRun: boolean): TaskId {
+function checkCollections(
+  context: SchematicContext,
+  collections: ICollections,
+  packageManager: string,
+  dryRun: boolean
+): TaskId {
   try {
     const entries = Object.entries(collections ?? {});
     const packages = entries.map(([packageName, settings]) => {
       const { version } = settings;
+      logger.silly(packageName, [collectionsInstalled]);
+      collectionsInstalled.push(packageName);
       return {
         packageName,
-        version
+        version,
       };
     });
     return context.addTask(
       new RunSchematicTask('installCollections', {
         packages,
         packageManager,
-        dryRun
+        dryRun,
       })
     );
   } catch (error) {
-    logger.error('Something happened when Project Builder was trying to install collections: ', [error.message]);
+    logger.error('Something happened when Project Builder was trying to install collections: ', [
+      error.message,
+    ]);
     process.exit(1);
   }
-
 }
 
-function uninstallCollections(context: SchematicContext, collections: ICollections, packageManager: string, dependencies: TaskId[], dryRun: boolean): TaskId {
-
+function uninstallCollections(
+  context: SchematicContext,
+  collections: ICollections,
+  packageManager: string,
+  dependencies: TaskId[],
+  dryRun: boolean
+): TaskId {
   const entries = Object.entries(collections);
   const packageNames = entries
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -204,7 +240,7 @@ function uninstallCollections(context: SchematicContext, collections: ICollectio
     new RunSchematicTask('uninstallCollections', {
       packageNames,
       packageManager,
-      dryRun
+      dryRun,
     }),
     dependencies
   );
@@ -218,16 +254,20 @@ function uninstallCollections(context: SchematicContext, collections: ICollectio
 //
 //
 function getGlobalSettings(schematic: string, alias?: string) {
-
-  if (!!alias && settingsCached[alias]) return (settingsCached[alias]);
-  if (!!schematic && settingsCached[schematic]) return (settingsCached[schematic]);
+  if (!!alias && settingsCached[alias]) return settingsCached[alias];
+  if (!!schematic && settingsCached[schematic]) return settingsCached[schematic];
 
   return [];
 }
 
-function executeSchematics(context: SchematicContext, schematics: {
-  [schematicName: string]: ISchematic
-}, dependencies: TaskId[], dryRun: boolean) {
+function executeSchematics(
+  context: SchematicContext,
+  schematics: {
+    [schematicName: string]: ISchematic;
+  },
+  dependencies: TaskId[],
+  dryRun: boolean
+) {
   const newDependencies: TaskId[] = [];
   // - validate if the schematic exists.
   // - check if collections are installed.
@@ -235,14 +275,22 @@ function executeSchematics(context: SchematicContext, schematics: {
   const schematicList = Object.entries(schematics);
   schematicList.forEach(([schematicName, schematic]) => {
     // - get global settings.
-    newDependencies.push(...processSchematic(context, '/', schematicName, schematic ?? {}, dependencies, dryRun));
+    newDependencies.push(
+      ...processSchematic(context, '/', schematicName, schematic ?? {}, dependencies, dryRun)
+    );
   });
 
   return [...newDependencies, ...dependencies];
 }
 
-
-function processSchematic(context: SchematicContext, path: string, schematicName: string, schematic: ISchematic, dependencies: TaskId[], dryRun: boolean) {
+function processSchematic(
+  context: SchematicContext,
+  path: string,
+  schematicName: string,
+  schematic: ISchematic,
+  dependencies: TaskId[],
+  dryRun: boolean
+) {
   try {
     // get settings
     const {
@@ -254,25 +302,34 @@ function processSchematic(context: SchematicContext, path: string, schematicName
       instances,
       // dependsOn,
       children,
-      sendPath
+      sendPath,
     } = schematic;
 
     const [globalCollection, globalSettings] = getGlobalSettings(schematicName, alias);
+    const finalCollection = collection ?? globalCollection;
     if (!globalCollection && !collection) {
-      logger.error(`Error executing ${schematicName} schematic`, [`${schematicName} doesn't have a collection specified`]);
+      logger.error(`Error executing ${schematicName} schematic`, [
+        `${schematicName} doesn't have a collection specified`,
+      ]);
       process.exit(1);
     }
 
     if (schematicPath) path = `${path}/${schematicPath}`;
 
-    dependencies.push(context.addTask(
-      new RunSchematicTask('showSchematicInfo', {
-        schematicName,
-        collection: collection ?? globalCollection
-      }),
-      dependencies
-    ));
+    logger.silly(finalCollection, [collectionsInstalled]);
+    if (!collectionsInstalled.some((c) => c === finalCollection)) {
+      installCollection(finalCollection);
+    }
 
+    dependencies.push(
+      context.addTask(
+        new RunSchematicTask('showSchematicInfo', {
+          schematicName,
+          collection: finalCollection,
+        }),
+        dependencies
+      )
+    );
 
     const taskIdList = executeSchematic(
       context,
@@ -281,14 +338,13 @@ function processSchematic(context: SchematicContext, path: string, schematicName
       schematicName,
       {
         ...globalSettings,
-        ...settings
+        ...settings,
       },
       dependencies,
       instances,
       dryRun,
       sendPath
     );
-
 
     dependencies.push(...taskIdList);
 
@@ -297,7 +353,9 @@ function processSchematic(context: SchematicContext, path: string, schematicName
 
     const childrenList = Object.entries(children);
     childrenList.forEach(([schematicChildName, childSettings]) => {
-      dependencies.push(...processSchematic(context, path, schematicChildName, childSettings, dependencies, dryRun));
+      dependencies.push(
+        ...processSchematic(context, path, schematicChildName, childSettings, dependencies, dryRun)
+      );
     });
     return dependencies;
   } catch (error) {
@@ -323,12 +381,11 @@ function executeSchematic(
   if (schematicPath) path = schematicPath;
 
   if (instances.length === 0) {
-
     let options = settings;
     if (sendPath) {
       options = {
         path,
-        ...settings
+        ...settings,
       };
     }
     const taskId = context.addTask(
@@ -343,12 +400,12 @@ function executeSchematic(
       if (instancePath) path = `${path}/${instancePath}`;
       let options: object = {
         ...settings,
-        ...instanceSettings
+        ...instanceSettings,
       };
       if (sendPath) {
         options = {
           path,
-          ...options
+          ...options,
         };
       }
       const taskId = context.addTask(
@@ -361,4 +418,24 @@ function executeSchematic(
   }
 
   return taskIdList;
+}
+
+async function installCollection(collection: string) {
+  const packageManagerCommands = {
+    npm: 'install',
+    yarn: 'add',
+    pnpm: 'add',
+    cnpm: 'install',
+    bun: 'add',
+  };
+
+  await spawnAsync(
+    globalPackageManager,
+    [packageManagerCommands[globalPackageManager], collection],
+    {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      shell: true,
+    }
+  );
 }
