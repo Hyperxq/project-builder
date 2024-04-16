@@ -22,6 +22,14 @@
       "factory": "./builder-generate/install-collections/install-collections.factory#installPackages",
       "hidden": true,
       "aliases": [
+        "ics"
+      ]
+    },
+    "installCollection": {
+      "description": "Install all the collection that project builder will use",
+      "factory": "./builder-generate/install-collection/install-collection.factory#installPackage",
+      "hidden": true,
+      "aliases": [
         "ic"
       ]
     },

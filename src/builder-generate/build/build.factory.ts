@@ -12,7 +12,7 @@ import {
 import Ajv from 'ajv';
 import schema from '../../config/config-schema.json';
 import { RunSchematicTask } from '@angular-devkit/schematics/tasks';
-import { colors, logger, spawnAsync, Spinner } from '../../utils';
+import { colors, logger, Spinner } from '../../utils';
 import { parseName } from '@schematics/angular/utility/parse-name';
 import { deepCopy } from '@angular-devkit/core';
 
@@ -68,8 +68,9 @@ export function main(options: BuildOptions) {
     let dependencies: TaskId[] = [];
 
     // 3. * Validate is collections are installed.
-    if (installCollections)
+    if (installCollections && json.collections !== undefined) {
       dependencies.push(checkCollections(context, deepCopy(collections), packageManager, dryRun));
+    }
 
     // 4. (for angular) Add Collections to angular.json
     // 5. (for angular) Check if projects are created and if not, install them.
@@ -80,7 +81,9 @@ export function main(options: BuildOptions) {
     // checkDependencies();
 
     // 7. * Execute schematics.
-    processCollections(deepCopy(collections));
+    if (json.collections !== undefined) {
+      processCollections(deepCopy(collections));
+    }
     try {
       //TODO: run schematic in dry-run first to check if everything is okay
       dependencies = executeSchematics(context, schematics, dependencies, dryRun);
@@ -104,7 +107,7 @@ export function main(options: BuildOptions) {
 }
 
 //: Promise<IWorkspaceStructure>
-async function getFile(filePath: string, remoteFile: boolean = false, tree: Tree) {
+async function getFile(filePath: string, remoteFile = false, tree: Tree) {
   const spinner = new Spinner('getFile');
   try {
     spinner.start(colors.blue(`Reading the ${remoteFile ? 'remote' : 'local'} file`));
@@ -196,7 +199,6 @@ function checkCollections(
     const entries = Object.entries(collections ?? {});
     const packages = entries.map(([packageName, settings]) => {
       const { version } = settings;
-      logger.silly(packageName, [collectionsInstalled]);
       collectionsInstalled.push(packageName);
       return {
         packageName,
@@ -273,8 +275,25 @@ function executeSchematics(
   // - check if collections are installed.
 
   const schematicList = Object.entries(schematics);
+
   schematicList.forEach(([schematicName, schematic]) => {
     // - get global settings.
+    if (
+      schematic &&
+      schematic.collection &&
+      !collectionsInstalled.some((c) => c === schematic.collection)
+    ) {
+      dependencies.push(
+        context.addTask(
+          new RunSchematicTask('installCollection', {
+            packageName: schematic.collection,
+            globalPackageManager,
+            dryRun,
+          }),
+          dependencies
+        )
+      );
+    }
     newDependencies.push(
       ...processSchematic(context, '/', schematicName, schematic ?? {}, dependencies, dryRun)
     );
@@ -315,11 +334,6 @@ function processSchematic(
     }
 
     if (schematicPath) path = `${path}/${schematicPath}`;
-
-    logger.silly(finalCollection, [collectionsInstalled]);
-    if (!collectionsInstalled.some((c) => c === finalCollection)) {
-      installCollection(finalCollection);
-    }
 
     dependencies.push(
       context.addTask(
@@ -418,24 +432,4 @@ function executeSchematic(
   }
 
   return taskIdList;
-}
-
-async function installCollection(collection: string) {
-  const packageManagerCommands = {
-    npm: 'install',
-    yarn: 'add',
-    pnpm: 'add',
-    cnpm: 'install',
-    bun: 'add',
-  };
-
-  await spawnAsync(
-    globalPackageManager,
-    [packageManagerCommands[globalPackageManager], collection],
-    {
-      cwd: process.cwd(),
-      stdio: 'inherit',
-      shell: true,
-    }
-  );
 }
